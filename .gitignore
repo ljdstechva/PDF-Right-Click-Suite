@@ -1,0 +1,17 @@
+bin/
+obj/
+artifacts/
+.vs/
+*.user
+*.suo
+*.log
+native/**/x64/
+native/**/Debug/
+native/**/Release/
+
+# Local agent context and laptop-specific handoff/audit history
+AGENTS.md
+AUDIT_REPORT.md
+CONTINUITY.md
+LAPTOP_HANDOFF.md
+LAPTOP_SETUP_REPORT.md

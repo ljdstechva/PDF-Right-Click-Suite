@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap10 desktop4 desktop5 com rescap">
+  <Identity
+    Name="PdfRightClickSuite"
+    Publisher="CN=PdfRightClickSuite"
+    Version="1.0.0.0"
+    ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>PdfRightClickSuite</DisplayName>
+    <PublisherDisplayName>PdfRightClickSuite</PublisherDisplayName>
+    <Logo>Assets\Logo.png</Logo>
+    <uap10:AllowExternalContent>true</uap10:AllowExternalContent>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.22000.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+  <Applications>
+    <Application Id="PdfRightClickSuite" Executable="PdfRightClickSuite.Cli.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="PdfRightClickSuite"
+        Description="PDF context menu tools"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Logo.png"
+        Square44x44Logo="Assets\Logo.png" />
+      <Extensions>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:SurrogateServer DisplayName="PdfRightClickSuite">
+              <!-- Windows 11 modern context menu requires IExplorerCommand COM classes. -->
+              <com:Class Id="B6BCB8E2-2E49-4E8B-8C46-23A1A0F9F801" Path="PdfRightClickSuite.ShellExtension.dll" ThreadingModel="STA" />
+              <com:Class Id="7DF53B3E-78B7-4B6E-94AE-76D57C761AA2" Path="PdfRightClickSuite.ShellExtension.dll" ThreadingModel="STA" />
+              <com:Class Id="3CE68E1F-C463-442D-AF3D-947A2E31D2E0" Path="PdfRightClickSuite.ShellExtension.dll" ThreadingModel="STA" />
+              <com:Class Id="9D55450F-7C6A-4B2E-98D5-0B05E91C1CC5" Path="PdfRightClickSuite.ShellExtension.dll" ThreadingModel="STA" />
+              <com:Class Id="D8A8E1C0-7B67-4F77-9B57-5B074C3A2C8F" Path="PdfRightClickSuite.ShellExtension.dll" ThreadingModel="STA" />
+              <com:Class Id="AD6102B8-2161-44C7-B63A-E93821D6FBC0" Path="PdfRightClickSuite.ShellExtension.dll" ThreadingModel="STA" />
+            </com:SurrogateServer>
+          </com:ComServer>
+        </com:Extension>
+        <desktop4:Extension Category="windows.fileExplorerContextMenus">
+          <desktop4:FileExplorerContextMenus>
+            <desktop5:ItemType Type="*">
+              <desktop5:Verb Id="PdfRightClickSuiteMerge" Clsid="B6BCB8E2-2E49-4E8B-8C46-23A1A0F9F801" />
+              <desktop5:Verb Id="PdfRightClickSuiteSplit" Clsid="7DF53B3E-78B7-4B6E-94AE-76D57C761AA2" />
+              <desktop5:Verb Id="PdfRightClickSuiteConvert" Clsid="3CE68E1F-C463-442D-AF3D-947A2E31D2E0" />
+              <desktop5:Verb Id="PdfRightClickSuiteScan" Clsid="9D55450F-7C6A-4B2E-98D5-0B05E91C1CC5" />
+              <desktop5:Verb Id="PdfRightClickSuiteScanColored" Clsid="D8A8E1C0-7B67-4F77-9B57-5B074C3A2C8F" />
+              <desktop5:Verb Id="PdfRightClickSuiteOpenWith" Clsid="AD6102B8-2161-44C7-B63A-E93821D6FBC0" />
+            </desktop5:ItemType>
+          </desktop4:FileExplorerContextMenus>
+        </desktop4:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
