@@ -55,19 +55,20 @@ public sealed class SelectionClassifier
         var canMerge = files.Length >= 2 && allPdf;
         var canSplit = files.Length == 1 && allPdf;
         var canScan = files.Length == 1 && allPdf;
+        var canConvertToOffice = files.Length == 1 && allPdf;
         var canConvert = allNonPdf && IsConvertibleSelection(files);
 
         var reason = "Selection is supported.";
-        if (!canMerge && !canSplit && !canScan && !canConvert)
+        if (!canMerge && !canSplit && !canScan && !canConvert && !canConvertToOffice)
         {
             reason = BuildReason(files, pdfCount);
         }
 
-        return new SelectionClassification(canMerge, canSplit, canConvert, canScan, reason, files);
+        return new SelectionClassification(canMerge, canSplit, canConvert, canScan, canConvertToOffice, reason, files);
     }
 
     private static SelectionClassification Disallow(string reason, IReadOnlyList<SelectedFileInfo> files)
-        => new(false, false, false, false, reason, files);
+        => new(false, false, false, false, false, reason, files);
 
     private static bool IsPdf(string extension) => string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase);
 

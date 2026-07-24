@@ -44,6 +44,52 @@ public sealed class RequestFileServiceTests
         Assert.Equal(request, roundTrip);
     }
 
+    [Theory]
+    [InlineData(PdfAction.ConvertToWord, "convertToWord")]
+    [InlineData(PdfAction.ConvertToExcel, "convertToExcel")]
+    [InlineData(PdfAction.ConvertToPowerPoint, "convertToPowerPoint")]
+    public void Request_json_round_trips_pdf_to_office_action_names(PdfAction action, string literal)
+    {
+        using var temp = new TemporaryDirectory();
+        var service = new RequestFileService();
+        var path = Path.Combine(temp.Path, "request.json");
+        var request = new PdfRequest(
+            action,
+            [Path.Combine(temp.Path, "source.pdf")],
+            new DateTimeOffset(2026, 7, 24, 12, 0, 0, TimeSpan.Zero),
+            temp.Path,
+            $"req-{literal}");
+
+        service.Write(path, request);
+        var json = File.ReadAllText(path);
+        var roundTrip = service.Read(path);
+
+        Assert.Contains($"\"action\": \"{literal}\"", json, StringComparison.Ordinal);
+        Assert.Equal(request, roundTrip);
+    }
+
+    [Fact]
+    public void Raw_convert_to_word_action_literal_deserializes_to_appended_enum_value()
+    {
+        using var temp = new TemporaryDirectory();
+        var requestPath = Path.Combine(temp.Path, "request.json");
+        File.WriteAllText(
+            requestPath,
+            $$"""
+              {
+                "action": "convertToWord",
+                "selectedFiles": ["{{Path.Combine(temp.Path, "source.pdf").Replace("\\", "\\\\", StringComparison.Ordinal)}}"],
+                "timestampUtc": "2026-07-24T12:00:00+00:00",
+                "sourceFolder": "{{temp.Path.Replace("\\", "\\\\", StringComparison.Ordinal)}}",
+                "requestId": "raw-convert-to-word"
+              }
+              """);
+
+        var request = new RequestFileService().Read(requestPath);
+
+        Assert.Equal(PdfAction.ConvertToWord, request.Action);
+    }
+
     [Fact]
     public void Read_rejects_oversized_requests()
     {

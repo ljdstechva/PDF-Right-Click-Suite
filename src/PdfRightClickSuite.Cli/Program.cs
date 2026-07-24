@@ -99,6 +99,9 @@ internal static class Program
                 PdfAction.Convert => await RunConvertAsync(files, options, cancellationSource.Token).ConfigureAwait(false),
                 PdfAction.Scan => await RunScanAsync(files.Single(), options, cancellationSource.Token, ScanColorMode.BlackAndWhite).ConfigureAwait(false),
                 PdfAction.ScanColored => await RunScanAsync(files.Single(), options, cancellationSource.Token, ScanColorMode.Colored).ConfigureAwait(false),
+                PdfAction.ConvertToWord => await RunPdfToOfficeAsync(files.Single(), OfficeExportFormat.Word, cancellationSource.Token).ConfigureAwait(false),
+                PdfAction.ConvertToExcel => await RunPdfToOfficeAsync(files.Single(), OfficeExportFormat.Excel, cancellationSource.Token).ConfigureAwait(false),
+                PdfAction.ConvertToPowerPoint => await RunPdfToOfficeAsync(files.Single(), OfficeExportFormat.PowerPoint, cancellationSource.Token).ConfigureAwait(false),
                 _ => throw new InvalidOperationException($"Unsupported action {request.Action}.")
             };
 
@@ -158,7 +161,7 @@ internal static class Program
 
         if (options.Action is null || options.Files.Count == 0)
         {
-            throw new ArgumentException("Use --request <json> or --action merge|split|convert|scan|scan-colored --files <file1> <file2> ...");
+            throw new ArgumentException("Use --request <json> or --action merge|split|convert|scan|scan-colored|convert-to-word|convert-to-excel|convert-to-powerpoint --files <file1> <file2> ...");
         }
 
         return new PdfRequest(
@@ -178,6 +181,9 @@ internal static class Program
             PdfAction.Convert => classification.CanConvert,
             PdfAction.Scan => classification.CanScan,
             PdfAction.ScanColored => classification.CanScan,
+            PdfAction.ConvertToWord => classification.CanConvertToOffice,
+            PdfAction.ConvertToExcel => classification.CanConvertToOffice,
+            PdfAction.ConvertToPowerPoint => classification.CanConvertToOffice,
             _ => false
         };
 
@@ -323,6 +329,68 @@ internal static class Program
         return outputPath;
     }
 
+    private static async Task<string> RunPdfToOfficeAsync(
+        string sourcePdf,
+        OfficeExportFormat format,
+        CancellationToken cancellationToken)
+    {
+        var extension = format switch
+        {
+            OfficeExportFormat.Word => ".docx",
+            OfficeExportFormat.Excel => ".xlsx",
+            OfficeExportFormat.PowerPoint => ".pptx",
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Unknown Office export format.")
+        };
+        var outputPath = new OutputNameService().GetPdfToOfficeOutputPath(sourcePdf, extension);
+        ShowAutomaticWrite($"Convert PDF to {format}", [sourcePdf], outputPath);
+        var service = new PdfToOfficeConvertService(new ExternalToolLocator());
+        PdfToOfficeResult? result = null;
+
+        if (format == OfficeExportFormat.Word)
+        {
+            await AnsiConsole.Status()
+                .Spinner(Spinner.Known.Dots)
+                .StartAsync(
+                    "Converting PDF to Word",
+                    async _ => result = await service
+                        .ConvertAsync(sourcePdf, outputPath, format, cancellationToken)
+                        .ConfigureAwait(false))
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            var pageCount = new PdfPageCountService().GetPageCount(sourcePdf);
+            await AnsiConsole.Progress()
+                .Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(), new ElapsedTimeColumn())
+                .StartAsync(async context =>
+                {
+                    var task = context.AddTask($"Converting PDF to {format}", maxValue: pageCount);
+                    var progress = new Progress<int>(value => task.Value = value);
+                    result = await service
+                        .ConvertAsync(sourcePdf, outputPath, format, cancellationToken, progress)
+                        .ConfigureAwait(false);
+                }).ConfigureAwait(false);
+        }
+
+        if (result is null)
+        {
+            throw new InvalidOperationException("PDF-to-Office conversion did not return a result.");
+        }
+
+        AnsiConsole.MarkupLine($"[dim]Converted with: {Markup.Escape(result.BackendUsed)}[/]");
+        AnsiConsole.MarkupLine($"[dim]Pages converted: {result.PageCount}[/]");
+        var qualityNote = format switch
+        {
+            OfficeExportFormat.Word when result.BackendUsed.StartsWith("LibreOffice", StringComparison.Ordinal) => "LibreOffice PDF import is layout-frame based; complex layouts may need manual cleanup.",
+            OfficeExportFormat.Word => "Microsoft Word PDF Reflow creates editable content; complex layouts may need manual cleanup.",
+            OfficeExportFormat.Excel => "Excel uses positioned text heuristics; formulas, charts, and original formatting are not recreated.",
+            OfficeExportFormat.PowerPoint => "Slides are page images (visually exact, not text-editable).",
+            _ => string.Empty
+        };
+        AnsiConsole.MarkupLine($"[dim]{Markup.Escape(qualityNote)}[/]");
+        return outputPath;
+    }
+
     private static void ShowAutomaticWrite(string operation, IReadOnlyList<string> files, string outputPath)
     {
         var table = new Table()
@@ -465,6 +533,9 @@ internal static class Program
         {
             PdfAction.Scan => "Scan (B&W)",
             PdfAction.ScanColored => "Scan (Colored)",
+            PdfAction.ConvertToWord => "Convert PDF to Word",
+            PdfAction.ConvertToExcel => "Convert PDF to Excel",
+            PdfAction.ConvertToPowerPoint => "Convert PDF to PowerPoint",
             _ => action.ToString()
         };
 
@@ -506,7 +577,7 @@ internal static class Program
             PdfRightClickSuite.Cli
 
             --request <path-to-json>
-            --action merge|split|convert|scan|scan-colored --files <file1> <file2> ...
+            --action merge|split|convert|scan|scan-colored|convert-to-word|convert-to-excel|convert-to-powerpoint --files <file1> <file2> ...
 
             Options:
               --yes                 skip confirmation prompts
@@ -523,6 +594,11 @@ internal static class Program
               --uninstall-user      uninstall current-user Explorer integration
               --dry-run             print install/uninstall command without changes
 
+            PDF-to-Office aliases:
+              convert-to-word | convert-docx | converttoword
+              convert-to-excel | convert-xlsx | converttoexcel
+              convert-to-powerpoint | convert-pptx | converttopowerpoint
+
             Press Ctrl+C to cancel a running operation.
             """).Header("Usage"));
     }
@@ -538,6 +614,7 @@ internal static class Program
               [green]--help[/]          Show command syntax
               [green]--diagnose[/]      Check Explorer integration and dependencies
               [green]--self-test[/]     Generate sample files and verify PDF operations
+              [green]--action convert-to-excel --files report.pdf[/]  Convert one PDF beside the source
               [green]--install-user[/]  Install for the current Windows user
               [green]--uninstall-user[/] Uninstall from the current Windows user
               [green]--version[/]       Print version
@@ -581,6 +658,8 @@ internal static class Program
         var certificateStatus = GetModernCertificateStatus();
         var modernLogPath = Path.Combine(GetLogsDirectory(), "modern-menu.log");
         var defaultScanSettings = ScanEffectSettings.Default;
+        var libreOfficePath = locator.FindLibreOffice();
+        var wordAvailability = MicrosoftOfficePdfConverter.IsPdfToDocxAvailable() ? "Available" : "Not found";
 
         var lines = new List<string>
         {
@@ -639,8 +718,11 @@ internal static class Program
             "Dependency status:",
             $"  Self-contained .NET app: {File.Exists(Path.ChangeExtension(cliPath, ".dll")) == false}",
             $"  Edge: {locator.FindEdge() ?? "Not found"}",
-            $"  LibreOffice: {locator.FindLibreOffice() ?? "Not found"}",
+            $"  LibreOffice: {libreOfficePath ?? "Not found"}",
             $"  Microsoft Office PDF fallback: {MicrosoftOfficePdfConverter.GetAvailabilitySummary()}",
+            $"  PDF to Word backends: Microsoft Word={wordAvailability}, LibreOffice={libreOfficePath ?? "Not found"}",
+            "  PDF to Excel backend: built-in text extraction (PdfPig)",
+            "  PDF to PowerPoint backend: built-in page rendering (PDFtoImage)",
         };
 
         File.WriteAllLines(reportPath, lines);
@@ -860,6 +942,54 @@ internal static class Program
                 .ConfigureAwait(false);
             report.Add($"Merge PDFs: {(File.Exists(mergeOut) && new PdfPageCountService().GetPageCount(mergeOut) == 2 ? "PASS" : "FAIL")} {mergeOut}");
 
+            var officeSource = Path.Combine(work, "office-source.pdf");
+            CreateTwoPageTextPdf(officeSource);
+            var officeSourceHash = Sha256File(officeSource);
+            var officeService = new PdfToOfficeConvertService(new ExternalToolLocator());
+            var officeOutputNameService = new OutputNameService();
+            var excelOut = officeOutputNameService.GetPdfToOfficeOutputPath(officeSource, ".xlsx");
+            var excelRequest = WriteSelfTestRequest(work, PdfAction.ConvertToExcel, [officeSource]);
+            var excelSource = new RequestFileService().Read(excelRequest).SelectedFiles.Single();
+            var excelResult = await officeService
+                .ConvertAsync(excelSource, excelOut, OfficeExportFormat.Excel, cancellationToken)
+                .ConfigureAwait(false);
+            using (var workbook = DocumentFormat.OpenXml.Packaging.SpreadsheetDocument.Open(excelOut, false))
+            {
+                var sheetCount = workbook.WorkbookPart?.Workbook?.Sheets?.ChildElements.Count ?? 0;
+                report.Add($"PDF to Excel: {(sheetCount == 2 && excelResult.PageCount == 2 ? "PASS" : "FAIL")} sheets={sheetCount} backend={excelResult.BackendUsed} {excelOut}");
+            }
+
+            var powerPointOut = officeOutputNameService.GetPdfToOfficeOutputPath(officeSource, ".pptx");
+            var powerPointRequest = WriteSelfTestRequest(work, PdfAction.ConvertToPowerPoint, [officeSource]);
+            var powerPointSource = new RequestFileService().Read(powerPointRequest).SelectedFiles.Single();
+            var powerPointResult = await officeService
+                .ConvertAsync(powerPointSource, powerPointOut, OfficeExportFormat.PowerPoint, cancellationToken)
+                .ConfigureAwait(false);
+            using (var presentation = DocumentFormat.OpenXml.Packaging.PresentationDocument.Open(powerPointOut, false))
+            {
+                var slideCount = presentation.PresentationPart?.Presentation?.SlideIdList?.ChildElements.Count ?? 0;
+                report.Add($"PDF to PowerPoint: {(slideCount == 2 && powerPointResult.PageCount == 2 ? "PASS" : "FAIL")} slides={slideCount} backend={powerPointResult.BackendUsed} {powerPointOut}");
+            }
+
+            var locator = new ExternalToolLocator();
+            if (MicrosoftOfficePdfConverter.IsPdfToDocxAvailable() || locator.FindLibreOffice() is not null)
+            {
+                var wordOut = officeOutputNameService.GetPdfToOfficeOutputPath(officeSource, ".docx");
+                var wordRequest = WriteSelfTestRequest(work, PdfAction.ConvertToWord, [officeSource]);
+                var wordSource = new RequestFileService().Read(wordRequest).SelectedFiles.Single();
+                var wordResult = await officeService
+                    .ConvertAsync(wordSource, wordOut, OfficeExportFormat.Word, cancellationToken)
+                    .ConfigureAwait(false);
+                using var wordDocument = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(wordOut, false);
+                report.Add($"PDF to Word: {(wordDocument.MainDocumentPart is not null && wordResult.PageCount == 2 ? "PASS" : "FAIL")} backend={wordResult.BackendUsed} {wordOut}");
+            }
+            else
+            {
+                report.Add("PDF to Word: SKIPPED (no Word/LibreOffice)");
+            }
+
+            report.Add($"PDF-to-Office source unchanged: {(string.Equals(officeSourceHash, Sha256File(officeSource), StringComparison.OrdinalIgnoreCase) ? "PASS" : "FAIL")}");
+
             var splitFolder = new OutputNameService().GetSplitOutputFolder(pdf1);
             var splitRequest = WriteSelfTestRequest(work, PdfAction.Split, [pdf1]);
             await new PdfSplitService(new PdfPageCountService())
@@ -937,8 +1067,26 @@ internal static class Program
         document.Save(path);
     }
 
+    private static void CreateTwoPageTextPdf(string path)
+    {
+        PdfSharpBootstrapFacade.EnsureInitialized();
+        using var document = new PdfSharp.Pdf.PdfDocument();
+        for (var pageNumber = 1; pageNumber <= 2; pageNumber++)
+        {
+            var page = document.AddPage();
+            using var graphics = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+            var font = new PdfSharp.Drawing.XFont("Arial", 14);
+            graphics.DrawString("Project", font, PdfSharp.Drawing.XBrushes.Black, new PdfSharp.Drawing.XPoint(72, 100));
+            graphics.DrawString($"Page {pageNumber}", font, PdfSharp.Drawing.XBrushes.Black, new PdfSharp.Drawing.XPoint(260, 100));
+            graphics.DrawString("Flow", font, PdfSharp.Drawing.XBrushes.Black, new PdfSharp.Drawing.XPoint(72, 130));
+            graphics.DrawString($"{pageNumber * 10} m3/day", font, PdfSharp.Drawing.XBrushes.Black, new PdfSharp.Drawing.XPoint(260, 130));
+        }
+
+        document.Save(path);
+    }
+
     private static string GetVersion()
-        => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0";
+        => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.1.0";
 
     private static string GetLogsDirectory()
         => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PdfRightClickSuite", "logs");
@@ -1409,6 +1557,28 @@ internal sealed class CliOptions
             case "scan-black-and-white":
             case "scan-blackwhite":
                 action = PdfAction.Scan;
+                return true;
+            case "convert-to-word":
+            case "convert-docx":
+            case "convert-word":
+            case "converttoword":
+            case "convertword":
+                action = PdfAction.ConvertToWord;
+                return true;
+            case "convert-to-excel":
+            case "convert-xlsx":
+            case "convert-excel":
+            case "converttoexcel":
+            case "convertexcel":
+                action = PdfAction.ConvertToExcel;
+                return true;
+            case "convert-to-powerpoint":
+            case "convert-to-ppt":
+            case "convert-pptx":
+            case "convert-powerpoint":
+            case "converttopowerpoint":
+            case "convertpowerpoint":
+                action = PdfAction.ConvertToPowerPoint;
                 return true;
             default:
                 return Enum.TryParse(value, ignoreCase: true, out action);

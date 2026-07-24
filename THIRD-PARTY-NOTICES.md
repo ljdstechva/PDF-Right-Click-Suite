@@ -8,6 +8,8 @@ PDF Right Click Suite includes third-party software. These notices apply only to
 | --- | --- | --- | --- |
 | PDFsharp | 6.2.4 | MIT | https://github.com/empira/PDFsharp |
 | PDFtoImage | 5.2.1 | MIT | https://github.com/sungaila/PDFtoImage |
+| PdfPig (`UglyToad.PdfPig` assemblies) | 0.1.15 | Apache-2.0 | https://github.com/UglyToad/PdfPig |
+| DocumentFormat.OpenXml | 3.5.1 | MIT | https://github.com/dotnet/Open-XML-SDK |
 | bblanchon.PDFium.Win32 | 147.0.7690 | Apache-2.0 in NuGet package metadata | https://github.com/bblanchon/pdfium-binaries |
 | SkiaSharp and SkiaSharp.NativeAssets.Win32 | 4.148.0 | MIT, plus incorporated third-party licenses | https://github.com/mono/SkiaSharp |
 | Spectre.Console and Spectre.Console.Ansi | 0.57.1 | MIT | https://github.com/spectreconsole/spectre.console |
@@ -17,6 +19,10 @@ The release package also includes these unmodified upstream files:
 
 - `third-party/DOTNET-RUNTIME-LICENSE.txt`
 - `third-party/DOTNET-RUNTIME-THIRD-PARTY-NOTICES.txt`
+- `third-party/OPENXML-SDK-LICENSE.txt`
+- `third-party/OPENXML-SDK-NOTICE.txt`
+- `third-party/PDFPIG-LICENSE.txt`
+- `third-party/PDFPIG-NOTICES.txt`
 - `third-party/SKIASHARP-LICENSE.txt`
 - `third-party/SKIASHARP-THIRD-PARTY-NOTICES.txt`
 
@@ -35,6 +41,10 @@ Copyright (c) 2021-2025 David Sungaila
 ### Spectre.Console and Spectre.Console.Ansi 0.57.1
 
 Copyright (c) 2020 Patrik Svensson, Phil Scott, Nils Andresen
+
+### DocumentFormat.OpenXml 3.5.1
+
+Copyright (c) .NET Foundation and Contributors
 
 ### MIT license text for the components above
 
@@ -55,6 +65,14 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## PdfPig attribution
+
+PdfPig 0.1.15 is distributed under Apache License 2.0. The release includes the
+upstream `LICENSE` and `NOTICES.txt` files as `third-party/PDFPIG-LICENSE.txt`
+and `third-party/PDFPIG-NOTICES.txt`. Those files include the required
+attributions and license terms for material derived from Apache PDFBox and
+other incorporated components.
 
 ## PDFium package attribution
 

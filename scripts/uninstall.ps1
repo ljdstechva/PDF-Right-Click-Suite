@@ -110,6 +110,10 @@ Remove-Item -LiteralPath 'HKCU:\Software\Classes\*\shellex\ContextMenuHandlers\P
 Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{68A2F5F6-2E91-4C66-B126-896B8C6C6834}' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{065E1050-7F50-4FDF-94C6-19B998E64A83}' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{AD6102B8-2161-44C7-B63A-E93821D6FBC0}' -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{4AA1C5C6-946D-4268-AF0C-8C3C137B0E24}' -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{8EA50A51-83A3-453F-8007-C946A13B081F}' -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{388E7AA8-AEDA-42C5-9477-0B50F86D4A6C}' -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath 'HKCU:\Software\Classes\CLSID\{EF7E97A8-DC06-4309-BCC9-48CA62875387}' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath 'HKCU:\Software\PdfRightClickSuite' -Recurse -Force -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved' -Name $Clsid -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved' -Name '{065E1050-7F50-4FDF-94C6-19B998E64A83}' -ErrorAction SilentlyContinue

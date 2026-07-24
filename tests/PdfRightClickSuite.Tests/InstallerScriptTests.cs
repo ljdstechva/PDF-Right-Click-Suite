@@ -132,6 +132,10 @@ public sealed class InstallerScriptTests
         Assert.Contains("ContextMenuHandlers\\PdfRightClickSuite", topInstallScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("uninstall-classic-top-menu.ps1", uninstallScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("{AD6102B8-2161-44C7-B63A-E93821D6FBC0}", uninstallScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{4AA1C5C6-946D-4268-AF0C-8C3C137B0E24}", uninstallScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{8EA50A51-83A3-453F-8007-C946A13B081F}", uninstallScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{388E7AA8-AEDA-42C5-9477-0B50F86D4A6C}", uninstallScript, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{EF7E97A8-DC06-4309-BCC9-48CA62875387}", uninstallScript, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Remove-Item", topUninstallScript, StringComparison.OrdinalIgnoreCase);
     }
 

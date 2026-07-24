@@ -23,6 +23,8 @@ public static class MicrosoftOfficePdfConverter
     public static string GetAvailabilitySummary()
         => $"Word={FormatAvailability(WordProgId)}, Excel={FormatAvailability(ExcelProgId)}, PowerPoint={FormatAvailability(PowerPointProgId)}";
 
+    public static bool IsPdfToDocxAvailable() => TryGetComType(WordProgId) is not null;
+
     public static void Convert(string inputPath, string outputPath, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -65,6 +67,66 @@ public static class MicrosoftOfficePdfConverter
         }
     }
 
+    public static void ConvertPdfToDocx(string inputPath, string outputPath, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!File.Exists(inputPath))
+        {
+            throw new FileNotFoundException("Source PDF does not exist.", inputPath);
+        }
+
+        if (!string.Equals(Path.GetExtension(inputPath), ".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new NotSupportedException("Microsoft Word PDF import requires a .pdf source file.");
+        }
+
+        if (File.Exists(outputPath))
+        {
+            throw new IOException($"Output already exists: {outputPath}");
+        }
+
+        var applicationType = TryGetComType(WordProgId)
+            ?? throw new FileNotFoundException("Microsoft Word desktop conversion is not available.");
+        var officeTempPdf = CreateOfficeTempPath(".pdf");
+        var officeTempDocx = CreateOfficeTempPath(".docx");
+        var stagedDocx = AtomicFileWriter.CreateTempPathBeside(outputPath);
+
+        try
+        {
+            File.Copy(inputPath, officeTempPdf);
+            RunOnStaThread(
+                () => ConvertPdfWithWord(applicationType, officeTempPdf, officeTempDocx),
+                ConversionTimeout,
+                cancellationToken,
+                () =>
+                {
+                    AtomicFileWriter.TryDelete(officeTempPdf);
+                    AtomicFileWriter.TryDelete(officeTempDocx);
+                    AtomicFileWriter.TryDelete(stagedDocx);
+                });
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!File.Exists(officeTempDocx) || new FileInfo(officeTempDocx).Length == 0)
+            {
+                throw new PdfProcessingException($"Microsoft Word did not create a DOCX output for '{inputPath}'.");
+            }
+
+            File.Copy(officeTempDocx, stagedDocx);
+            cancellationToken.ThrowIfCancellationRequested();
+            AtomicFileWriter.MoveIntoPlace(stagedDocx, outputPath);
+        }
+        catch (Exception ex) when (ex is not IOException and not OperationCanceledException and not TimeoutException and not PdfProcessingException)
+        {
+            throw new PdfProcessingException($"Microsoft Word PDF-to-DOCX conversion failed for '{inputPath}'.", ex);
+        }
+        finally
+        {
+            AtomicFileWriter.TryDelete(officeTempPdf);
+            AtomicFileWriter.TryDelete(officeTempDocx);
+            AtomicFileWriter.TryDelete(stagedDocx);
+        }
+    }
+
     private static OfficeApplication? ResolveApplication(string extension)
     {
         return extension.ToLowerInvariant() switch
@@ -99,11 +161,13 @@ public static class MicrosoftOfficePdfConverter
 
     private static string FormatAvailability(string progId) => TryGetComType(progId) is null ? "Not found" : "Available";
 
-    private static string CreateOfficeTempPdfPath()
+    private static string CreateOfficeTempPdfPath() => CreateOfficeTempPath(".pdf");
+
+    private static string CreateOfficeTempPath(string extension)
     {
         var folder = Path.Combine(Path.GetTempPath(), "PdfRightClickSuite", "Office");
         Directory.CreateDirectory(folder);
-        return Path.Combine(folder, $"{Guid.NewGuid():N}.pdf");
+        return Path.Combine(folder, $"{Guid.NewGuid():N}{extension}");
     }
 
     private static void RunOnStaThread(Action action, TimeSpan timeout, CancellationToken cancellationToken, Action onAbandoned)
@@ -186,6 +250,46 @@ public static class MicrosoftOfficePdfConverter
             documentObject = documents.Open(FileName: inputPath, ConfirmConversions: false, ReadOnly: true, AddToRecentFiles: false, Visible: false);
             dynamic document = documentObject;
             document.ExportAsFixedFormat(OutputFileName: tempPdf, ExportFormat: 17, OpenAfterExport: false);
+        }
+        finally
+        {
+            CloseComObject(documentObject, value =>
+            {
+                dynamic document = value;
+                document.Close(SaveChanges: 0);
+            });
+            ReleaseComObject(documentsObject);
+            CloseComObject(wordObject, value =>
+            {
+                dynamic word = value;
+                word.Quit(SaveChanges: 0);
+            });
+        }
+    }
+
+    private static void ConvertPdfWithWord(Type applicationType, string inputPath, string tempDocx)
+    {
+        object? wordObject = null;
+        object? documentsObject = null;
+        object? documentObject = null;
+
+        try
+        {
+            wordObject = Activator.CreateInstance(applicationType)!;
+            dynamic word = wordObject;
+            word.Visible = false;
+            word.DisplayAlerts = 0;
+
+            documentsObject = word.Documents;
+            dynamic documents = documentsObject;
+            documentObject = documents.Open(
+                FileName: inputPath,
+                ConfirmConversions: false,
+                ReadOnly: true,
+                AddToRecentFiles: false,
+                Visible: false);
+            dynamic document = documentObject;
+            document.SaveAs2(FileName: tempDocx, FileFormat: 16, AddToRecentFiles: false);
         }
         finally
         {

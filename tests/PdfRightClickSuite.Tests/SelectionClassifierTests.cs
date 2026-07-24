@@ -13,11 +13,12 @@ public sealed class SelectionClassifierTests
         Assert.False(result.CanSplit);
         Assert.False(result.CanConvert);
         Assert.False(result.CanScan);
+        Assert.False(result.CanConvertToOffice);
         Assert.Contains("No files", result.Reason, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void Classify_allows_single_pdf_for_split_and_scan_only()
+    public void Classify_allows_single_pdf_for_split_scan_and_office_conversion()
     {
         using var temp = new TemporaryDirectory();
         var pdf = temp.CreateFile("report.pdf");
@@ -28,6 +29,7 @@ public sealed class SelectionClassifierTests
         Assert.True(result.CanSplit);
         Assert.False(result.CanConvert);
         Assert.True(result.CanScan);
+        Assert.True(result.CanConvertToOffice);
         Assert.Equal(".pdf", result.Files.Single().Extension);
     }
 
@@ -44,6 +46,7 @@ public sealed class SelectionClassifierTests
         Assert.False(result.CanSplit);
         Assert.False(result.CanConvert);
         Assert.False(result.CanScan);
+        Assert.False(result.CanConvertToOffice);
     }
 
     [Fact]
@@ -58,6 +61,7 @@ public sealed class SelectionClassifierTests
         Assert.False(result.CanSplit);
         Assert.True(result.CanConvert);
         Assert.False(result.CanScan);
+        Assert.False(result.CanConvertToOffice);
     }
 
     [Fact]
@@ -124,6 +128,7 @@ public sealed class SelectionClassifierTests
         Assert.False(result.CanSplit);
         Assert.False(result.CanConvert);
         Assert.False(result.CanScan);
+        Assert.False(result.CanConvertToOffice);
         Assert.Contains("directory", result.Reason, StringComparison.OrdinalIgnoreCase);
     }
 }

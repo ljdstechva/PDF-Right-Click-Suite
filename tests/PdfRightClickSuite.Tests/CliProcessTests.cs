@@ -32,6 +32,10 @@ public sealed class CliProcessTests
         Assert.Contains("Scan (B&W) default preset: low-quality", result.Output, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Scan (Colored) action available", result.Output, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Microsoft Office PDF fallback", result.Output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PDF to Word backends: Microsoft Word=", result.Output, StringComparison.Ordinal);
+        Assert.Contains("LibreOffice=", result.Output, StringComparison.Ordinal);
+        Assert.Contains("PDF to Excel backend: built-in text extraction (PdfPig)", result.Output, StringComparison.Ordinal);
+        Assert.Contains("PDF to PowerPoint backend: built-in page rendering (PDFtoImage)", result.Output, StringComparison.Ordinal);
         Assert.Contains("PDF Gear context menu status", result.Output, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Modern menu intentionally disabled", result.Output, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Native launch mode", result.Output, StringComparison.OrdinalIgnoreCase);
@@ -242,6 +246,72 @@ public sealed class CliProcessTests
         Assert.DoesNotContain("Write output now", result.Output, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Scan (Colored)", result.Output, StringComparison.OrdinalIgnoreCase);
         Assert.True(File.Exists(Path.Combine(temp.Path, "scan source_scanned_colored.pdf")));
+    }
+
+    [Fact]
+    public async Task Convert_to_excel_cli_alias_writes_xlsx_beside_source()
+    {
+        using var temp = new TemporaryDirectory();
+        var pdf = CreateSamplePdf(temp.Path, "table source.pdf");
+
+        var result = await RunCliAsync("--action", "convert-to-excel", "--files", pdf, "--yes");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Converted with: PdfPig + Open XML SDK", result.Output, StringComparison.Ordinal);
+        Assert.Contains("PdfPig + Open XML SDK", result.Output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(temp.Path, "table source.xlsx")));
+    }
+
+    [Fact]
+    public async Task Convert_to_powerpoint_cli_alias_writes_pptx_beside_source()
+    {
+        using var temp = new TemporaryDirectory();
+        var pdf = CreateSamplePdf(temp.Path, "slide source.pdf");
+
+        var result = await RunCliAsync("--action", "convert-pptx", "--files", pdf, "--yes");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Converted with: PDFtoImage + Open XML SDK", result.Output, StringComparison.Ordinal);
+        Assert.Contains("PDFtoImage + Open XML SDK", result.Output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(temp.Path, "slide source.pptx")));
+    }
+
+    [Fact]
+    public async Task Convert_to_word_shell_request_drives_same_cli_flow_when_word_is_available()
+    {
+        if (!OperatingSystem.IsWindows() || !MicrosoftOfficePdfConverter.IsPdfToDocxAvailable())
+        {
+            return;
+        }
+
+        using var temp = new TemporaryDirectory();
+        var pdf = CreateSamplePdf(temp.Path, "word source.pdf");
+        var request = WriteRequest(temp.Path, PdfAction.ConvertToWord, [pdf]);
+
+        var result = await RunCliAsync("--request", request, "--yes");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Microsoft Word PDF import", result.Output, StringComparison.Ordinal);
+        Assert.True(File.Exists(Path.Combine(temp.Path, "word source.docx")));
+    }
+
+    [Fact]
+    public void Pdf_to_office_aliases_map_to_the_appended_actions()
+    {
+        var source = File.ReadAllText(Path.Combine(FindRepoRoot(), "src", "PdfRightClickSuite.Cli", "Program.cs"));
+        foreach (var alias in new[]
+                 {
+                     "convert-to-word", "convert-docx", "converttoword",
+                     "convert-to-excel", "convert-xlsx", "converttoexcel",
+                     "convert-to-powerpoint", "convert-pptx", "converttopowerpoint"
+                 })
+        {
+            Assert.Contains($"case \"{alias}\"", source, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("action = PdfAction.ConvertToWord", source, StringComparison.Ordinal);
+        Assert.Contains("action = PdfAction.ConvertToExcel", source, StringComparison.Ordinal);
+        Assert.Contains("action = PdfAction.ConvertToPowerPoint", source, StringComparison.Ordinal);
     }
 
     private static async Task<CliRunResult> RunCliAsync(params string[] args)

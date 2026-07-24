@@ -28,6 +28,15 @@ public sealed class OutputNameService(IClock? clock = null)
         return GetUniqueFilePath(folder, $"{Path.GetFileNameWithoutExtension(sourcePdf)}_scanned_colored", ".pdf");
     }
 
+    public string GetPdfToOfficeOutputPath(string sourcePdf, string extension)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourcePdf);
+        ArgumentException.ThrowIfNullOrWhiteSpace(extension);
+        var normalizedExtension = extension.StartsWith(".", StringComparison.Ordinal) ? extension : $".{extension}";
+        var folder = Path.GetDirectoryName(Path.GetFullPath(sourcePdf)) ?? Directory.GetCurrentDirectory();
+        return GetUniqueFilePath(folder, Path.GetFileNameWithoutExtension(sourcePdf), normalizedExtension);
+    }
+
     public string GetSplitOutputFolder(string sourcePdf)
     {
         var folder = Path.GetDirectoryName(Path.GetFullPath(sourcePdf)) ?? Directory.GetCurrentDirectory();

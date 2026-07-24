@@ -8,8 +8,20 @@ public enum PdfAction
     Split,
     Convert,
     Scan,
-    ScanColored
+    ScanColored,
+    ConvertToWord,
+    ConvertToExcel,
+    ConvertToPowerPoint
 }
+
+public enum OfficeExportFormat
+{
+    Word,
+    Excel,
+    PowerPoint
+}
+
+public sealed record PdfToOfficeResult(string BackendUsed, int PageCount);
 
 public enum ScanStrength
 {
@@ -122,6 +134,7 @@ public sealed record SelectionClassification(
     bool CanSplit,
     bool CanConvert,
     bool CanScan,
+    bool CanConvertToOffice,
     string Reason,
     IReadOnlyList<SelectedFileInfo> Files);
 

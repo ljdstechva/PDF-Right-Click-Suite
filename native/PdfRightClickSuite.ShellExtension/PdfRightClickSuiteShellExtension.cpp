@@ -62,6 +62,30 @@ constexpr CLSID CLSID_PdfRightClickSuiteOpenWith = {
     0x44c7,
     {0xb6, 0x3a, 0xe9, 0x38, 0x21, 0xd6, 0xfb, 0xc0}};
 
+constexpr CLSID CLSID_PdfRightClickSuiteConvertTo = {
+    0x4aa1c5c6,
+    0x946d,
+    0x4268,
+    {0xaf, 0x0c, 0x8c, 0x3c, 0x13, 0x7b, 0x0e, 0x24}};
+
+constexpr CLSID CLSID_PdfRightClickSuiteConvertToWord = {
+    0x8ea50a51,
+    0x83a3,
+    0x453f,
+    {0x80, 0x07, 0xc9, 0x46, 0xa1, 0x3b, 0x08, 0x1f}};
+
+constexpr CLSID CLSID_PdfRightClickSuiteConvertToExcel = {
+    0x388e7aa8,
+    0xaeda,
+    0x42c5,
+    {0x94, 0x77, 0x0b, 0x50, 0xf8, 0x6d, 0x4a, 0x6c}};
+
+constexpr CLSID CLSID_PdfRightClickSuiteConvertToPowerPoint = {
+    0xef7e97a8,
+    0xdc06,
+    0x4309,
+    {0xbc, 0xc9, 0x48, 0xca, 0x62, 0x87, 0x53, 0x87}};
+
 constexpr wchar_t kClsidString[] = L"{68A2F5F6-2E91-4C66-B126-896B8C6C6834}";
 constexpr wchar_t kTopClsidString[] = L"{065E1050-7F50-4FDF-94C6-19B998E64A83}";
 constexpr wchar_t kMergeClsidString[] = L"{B6BCB8E2-2E49-4E8B-8C46-23A1A0F9F801}";
@@ -70,6 +94,10 @@ constexpr wchar_t kConvertClsidString[] = L"{3CE68E1F-C463-442D-AF3D-947A2E31D2E
 constexpr wchar_t kScanClsidString[] = L"{9D55450F-7C6A-4B2E-98D5-0B05E91C1CC5}";
 constexpr wchar_t kScanColoredClsidString[] = L"{D8A8E1C0-7B67-4F77-9B57-5B074C3A2C8F}";
 constexpr wchar_t kOpenWithClsidString[] = L"{AD6102B8-2161-44C7-B63A-E93821D6FBC0}";
+constexpr wchar_t kConvertToClsidString[] = L"{4AA1C5C6-946D-4268-AF0C-8C3C137B0E24}";
+constexpr wchar_t kConvertToWordClsidString[] = L"{8EA50A51-83A3-453F-8007-C946A13B081F}";
+constexpr wchar_t kConvertToExcelClsidString[] = L"{388E7AA8-AEDA-42C5-9477-0B50F86D4A6C}";
+constexpr wchar_t kConvertToPowerPointClsidString[] = L"{EF7E97A8-DC06-4309-BCC9-48CA62875387}";
 constexpr wchar_t kComName[] = L"PdfRightClickSuite PDF context menu";
 constexpr wchar_t kTopComName[] = L"PdfRightClickSuite PDF top classic menu";
 constexpr wchar_t kAppRegistryKey[] = L"Software\\PdfRightClickSuite";
@@ -81,6 +109,10 @@ constexpr wchar_t kConvertClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{3CE6
 constexpr wchar_t kScanClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{9D55450F-7C6A-4B2E-98D5-0B05E91C1CC5}";
 constexpr wchar_t kScanColoredClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{D8A8E1C0-7B67-4F77-9B57-5B074C3A2C8F}";
 constexpr wchar_t kOpenWithClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{AD6102B8-2161-44C7-B63A-E93821D6FBC0}";
+constexpr wchar_t kConvertToClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{4AA1C5C6-946D-4268-AF0C-8C3C137B0E24}";
+constexpr wchar_t kConvertToWordClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{8EA50A51-83A3-453F-8007-C946A13B081F}";
+constexpr wchar_t kConvertToExcelClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{388E7AA8-AEDA-42C5-9477-0B50F86D4A6C}";
+constexpr wchar_t kConvertToPowerPointClsidRegistryKey[] = L"Software\\Classes\\CLSID\\{EF7E97A8-DC06-4309-BCC9-48CA62875387}";
 constexpr wchar_t kHandlerRegistryKey[] = L"Software\\Classes\\*\\shellex\\ContextMenuHandlers\\PdfRightClickSuite";
 
 long g_dllRefCount = 0;
@@ -94,7 +126,11 @@ enum CommandId : UINT
     CommandScan = 3,
     CommandScanColored = 4,
     CommandOpenWith = 5,
-    CommandCount = 6
+    CommandConvertTo = 6,
+    CommandConvertToWord = 7,
+    CommandConvertToExcel = 8,
+    CommandConvertToPowerPoint = 9,
+    CommandCount = 10
 };
 
 struct Visibility
@@ -105,10 +141,11 @@ struct Visibility
     bool scan = false;
     bool scanColored = false;
     bool openWith = false;
+    bool convertToOffice = false;
 
     bool Any() const
     {
-        return merge || split || convert || scan || scanColored || openWith;
+        return merge || split || convert || scan || scanColored || openWith || convertToOffice;
     }
 };
 
@@ -219,6 +256,7 @@ Visibility Classify(const std::vector<std::wstring>& files)
     visibility.scan = files.size() == 1 && allPdf;
     visibility.scanColored = files.size() == 1 && allPdf;
     visibility.openWith = files.size() == 1 && allPdf;
+    visibility.convertToOffice = files.size() == 1 && allPdf;
 
     if (allNonPdf)
     {
@@ -343,6 +381,14 @@ std::wstring ActionName(CommandId command)
         return L"scanColored";
     case CommandOpenWith:
         return L"openWith";
+    case CommandConvertTo:
+        return L"convertTo";
+    case CommandConvertToWord:
+        return L"convertToWord";
+    case CommandConvertToExcel:
+        return L"convertToExcel";
+    case CommandConvertToPowerPoint:
+        return L"convertToPowerPoint";
     default:
         return L"";
     }
@@ -890,6 +936,11 @@ bool CommandVisible(const Visibility& visibility, CommandId command)
         return visibility.scanColored;
     case CommandOpenWith:
         return visibility.openWith && !DetectPdfApps().empty();
+    case CommandConvertTo:
+    case CommandConvertToWord:
+    case CommandConvertToExcel:
+    case CommandConvertToPowerPoint:
+        return visibility.convertToOffice;
     default:
         return false;
     }
@@ -911,6 +962,14 @@ const wchar_t* TitleForCommand(CommandId command)
         return L"Make Scanned PDF (Colored)";
     case CommandOpenWith:
         return L"Open PDF With";
+    case CommandConvertTo:
+        return L"Convert PDF To";
+    case CommandConvertToWord:
+        return L"Word (.docx)";
+    case CommandConvertToExcel:
+        return L"Excel (.xlsx)";
+    case CommandConvertToPowerPoint:
+        return L"PowerPoint (.pptx)";
     default:
         return L"PDF";
     }
@@ -932,6 +991,14 @@ const GUID& GuidForCommand(CommandId command)
         return CLSID_PdfRightClickSuiteScanColored;
     case CommandOpenWith:
         return CLSID_PdfRightClickSuiteOpenWith;
+    case CommandConvertTo:
+        return CLSID_PdfRightClickSuiteConvertTo;
+    case CommandConvertToWord:
+        return CLSID_PdfRightClickSuiteConvertToWord;
+    case CommandConvertToExcel:
+        return CLSID_PdfRightClickSuiteConvertToExcel;
+    case CommandConvertToPowerPoint:
+        return CLSID_PdfRightClickSuiteConvertToPowerPoint;
     default:
         return CLSID_PdfRightClickSuite;
     }
@@ -1359,6 +1426,7 @@ public:
                        L" convert=" + BoolText(visibility.convert) +
                        L" scan=" + BoolText(visibility.scan) +
                        L" scanColored=" + BoolText(visibility.scanColored) +
+                       L" convertToOffice=" + BoolText(visibility.convertToOffice) +
                        L" openWith=" + BoolText(visibility.openWith));
             if (!visibility.Any())
             {
@@ -1378,6 +1446,20 @@ public:
             if (visibility.split)
             {
                 AddSubMenuItem(submenu, idCmdFirst + CommandSplit, L"Split PDF");
+            }
+            if (visibility.convertToOffice)
+            {
+                HMENU convertToMenu = CreatePopupMenu();
+                if (convertToMenu == nullptr)
+                {
+                    DestroyMenu(submenu);
+                    return E_OUTOFMEMORY;
+                }
+
+                AddSubMenuItem(convertToMenu, idCmdFirst + CommandConvertToWord, L"Word (.docx)");
+                AddSubMenuItem(convertToMenu, idCmdFirst + CommandConvertToExcel, L"Excel (.xlsx)");
+                AddSubMenuItem(convertToMenu, idCmdFirst + CommandConvertToPowerPoint, L"PowerPoint (.pptx)");
+                AddSubMenuPopup(submenu, convertToMenu, L"Convert PDF To");
             }
             if (visibility.convert)
             {
@@ -1461,9 +1543,9 @@ public:
             }
 
             const auto visibility = Classify(files_);
-            if (command == CommandOpenWith)
+            if (command == CommandOpenWith || command == CommandConvertTo)
             {
-                LogMessage(L"invoke ignored open-with parent command");
+                LogMessage(L"invoke ignored submenu parent command=" + ActionName(command));
                 return E_NOTIMPL;
             }
 
@@ -1504,6 +1586,18 @@ public:
             break;
         case CommandOpenWith:
             text = L"Open the selected PDF with an installed PDF app";
+            break;
+        case CommandConvertTo:
+            text = L"Convert the selected PDF to an Office document";
+            break;
+        case CommandConvertToWord:
+            text = L"Convert the selected PDF to an editable Word document";
+            break;
+        case CommandConvertToExcel:
+            text = L"Convert the selected PDF to an Excel workbook (best for table-style PDFs)";
+            break;
+        case CommandConvertToPowerPoint:
+            text = L"Convert the selected PDF to a PowerPoint presentation (one slide per page)";
             break;
         default:
             if (idCmd >= CommandCount)
@@ -1791,6 +1885,8 @@ private:
     ULONG index_;
 };
 
+HRESULT CreateExplorerCommandEnum(std::vector<CommandId> commands, IEnumExplorerCommand** output);
+
 class ExplorerCommandHandler final : public IExplorerCommand
 {
 public:
@@ -1856,12 +1952,21 @@ public:
 
     IFACEMETHODIMP GetToolTip(IShellItemArray*, LPWSTR* tip) override
     {
-        if (command_ == CommandOpenWith)
+        switch (command_)
         {
+        case CommandOpenWith:
             return AllocCoString(L"Open the selected PDF with an installed PDF app", tip);
+        case CommandConvertTo:
+            return AllocCoString(L"Convert the selected PDF to an Office document", tip);
+        case CommandConvertToWord:
+            return AllocCoString(L"Convert the selected PDF to an editable Word document", tip);
+        case CommandConvertToExcel:
+            return AllocCoString(L"Convert the selected PDF to an Excel workbook (best for table-style PDFs)", tip);
+        case CommandConvertToPowerPoint:
+            return AllocCoString(L"Convert the selected PDF to a PowerPoint presentation (one slide per page)", tip);
+        default:
+            return AllocCoString(L"Run PdfRightClickSuite", tip);
         }
-
-        return AllocCoString(L"Run PdfRightClickSuite", tip);
     }
 
     IFACEMETHODIMP GetCanonicalName(GUID* guid) override
@@ -1924,6 +2029,12 @@ public:
                 return E_NOTIMPL;
             }
 
+            if (command_ == CommandConvertTo)
+            {
+                LogMessage(L"explorer-command convert-to parent invoke ignored");
+                return E_NOTIMPL;
+            }
+
             return LaunchCli(command_, files);
         }
         catch (...)
@@ -1940,13 +2051,25 @@ public:
             return E_POINTER;
         }
 
-        *flags = command_ == CommandOpenWith ? ECF_HASSUBCOMMANDS | ECF_SEPARATORBEFORE : ECF_DEFAULT;
+        if (command_ == CommandOpenWith)
+        {
+            *flags = ECF_HASSUBCOMMANDS | ECF_SEPARATORBEFORE;
+        }
+        else if (command_ == CommandConvertTo)
+        {
+            *flags = ECF_HASSUBCOMMANDS;
+        }
+        else
+        {
+            *flags = ECF_DEFAULT;
+        }
+
         return S_OK;
     }
 
     IFACEMETHODIMP EnumSubCommands(IEnumExplorerCommand** commands) override
     {
-        if (command_ != CommandOpenWith)
+        if (command_ != CommandOpenWith && command_ != CommandConvertTo)
         {
             return E_NOTIMPL;
         }
@@ -1954,6 +2077,13 @@ public:
         if (commands == nullptr)
         {
             return E_POINTER;
+        }
+
+        if (command_ == CommandConvertTo)
+        {
+            return CreateExplorerCommandEnum(
+                {CommandConvertToWord, CommandConvertToExcel, CommandConvertToPowerPoint},
+                commands);
         }
 
         auto* result = new (std::nothrow) PdfAppCommandEnum(DetectPdfApps());
@@ -2094,6 +2224,19 @@ private:
     ULONG index_;
 };
 
+HRESULT CreateExplorerCommandEnum(std::vector<CommandId> commands, IEnumExplorerCommand** output)
+{
+    auto* result = new (std::nothrow) ExplorerCommandEnum(std::move(commands));
+    if (result == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    const auto hr = result->QueryInterface(IID_IEnumExplorerCommand, reinterpret_cast<void**>(output));
+    result->Release();
+    return hr;
+}
+
 class ExplorerTopCommandHandler final : public IExplorerCommand
 {
 public:
@@ -2190,10 +2333,11 @@ public:
                        L" visible=" + BoolText(visible) +
                        L" merge=" + BoolText(visibility.merge) +
                        L" split=" + BoolText(visibility.split) +
-                       L" convert=" + BoolText(visibility.convert) +
-                       L" scan=" + BoolText(visibility.scan) +
-                       L" scanColored=" + BoolText(visibility.scanColored) +
-                       L" openWith=" + BoolText(visibility.openWith));
+                        L" convert=" + BoolText(visibility.convert) +
+                        L" scan=" + BoolText(visibility.scan) +
+                        L" scanColored=" + BoolText(visibility.scanColored) +
+                        L" convertToOffice=" + BoolText(visibility.convertToOffice) +
+                        L" openWith=" + BoolText(visibility.openWith));
             return S_OK;
         }
         catch (...)
@@ -2265,7 +2409,7 @@ public:
 private:
     static std::vector<CommandId> TopCommandOrder()
     {
-        return {CommandConvert, CommandMerge, CommandSplit, CommandScan, CommandScanColored, CommandOpenWith};
+        return {CommandConvert, CommandMerge, CommandSplit, CommandConvertTo, CommandScan, CommandScanColored, CommandOpenWith};
     }
 
     long refCount_;
@@ -2427,6 +2571,30 @@ bool TryGetExplorerSubCommand(REFCLSID clsid, CommandId& command)
         return true;
     }
 
+    if (IsEqualCLSID(clsid, CLSID_PdfRightClickSuiteConvertTo))
+    {
+        command = CommandConvertTo;
+        return true;
+    }
+
+    if (IsEqualCLSID(clsid, CLSID_PdfRightClickSuiteConvertToWord))
+    {
+        command = CommandConvertToWord;
+        return true;
+    }
+
+    if (IsEqualCLSID(clsid, CLSID_PdfRightClickSuiteConvertToExcel))
+    {
+        command = CommandConvertToExcel;
+        return true;
+    }
+
+    if (IsEqualCLSID(clsid, CLSID_PdfRightClickSuiteConvertToPowerPoint))
+    {
+        command = CommandConvertToPowerPoint;
+        return true;
+    }
+
     return false;
 }
 } // namespace
@@ -2524,7 +2692,31 @@ STDAPI DllRegisterServer()
             return hr;
         }
 
-        return RegisterComClass(kOpenWithClsidRegistryKey, L"PdfRightClickSuite Open PDF With command", modulePath);
+        hr = RegisterComClass(kOpenWithClsidRegistryKey, L"PdfRightClickSuite Open PDF With command", modulePath);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        hr = RegisterComClass(kConvertToClsidRegistryKey, L"PdfRightClickSuite Convert PDF To command", modulePath);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        hr = RegisterComClass(kConvertToWordClsidRegistryKey, L"PdfRightClickSuite Convert PDF to Word command", modulePath);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        hr = RegisterComClass(kConvertToExcelClsidRegistryKey, L"PdfRightClickSuite Convert PDF to Excel command", modulePath);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        return RegisterComClass(kConvertToPowerPointClsidRegistryKey, L"PdfRightClickSuite Convert PDF to PowerPoint command", modulePath);
     }
     catch (...)
     {
@@ -2545,6 +2737,10 @@ STDAPI DllUnregisterServer()
         RegDeleteTreeW(HKEY_CURRENT_USER, kScanClsidRegistryKey);
         RegDeleteTreeW(HKEY_CURRENT_USER, kScanColoredClsidRegistryKey);
         RegDeleteTreeW(HKEY_CURRENT_USER, kOpenWithClsidRegistryKey);
+        RegDeleteTreeW(HKEY_CURRENT_USER, kConvertToClsidRegistryKey);
+        RegDeleteTreeW(HKEY_CURRENT_USER, kConvertToWordClsidRegistryKey);
+        RegDeleteTreeW(HKEY_CURRENT_USER, kConvertToExcelClsidRegistryKey);
+        RegDeleteTreeW(HKEY_CURRENT_USER, kConvertToPowerPointClsidRegistryKey);
         return S_OK;
     }
     catch (...)

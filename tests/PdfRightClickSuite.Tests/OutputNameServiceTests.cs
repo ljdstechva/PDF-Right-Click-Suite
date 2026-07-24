@@ -92,6 +92,23 @@ public sealed class OutputNameServiceTests
         Assert.Equal(Path.Combine(temp.Path, "Converted_Merged_20260701_051011.pdf"), path);
     }
 
+    [Theory]
+    [InlineData(".docx")]
+    [InlineData("xlsx")]
+    [InlineData(".pptx")]
+    public void GetPdfToOfficeOutputPath_uses_source_stem_and_collision_suffix(string extension)
+    {
+        using var temp = new TemporaryDirectory();
+        var source = temp.CreateFile("annual report.pdf");
+        var normalizedExtension = extension.StartsWith('.') ? extension : $".{extension}";
+        temp.CreateFile($"annual report{normalizedExtension}");
+        var service = new OutputNameService(new FixedClock(FixedNow));
+
+        var path = service.GetPdfToOfficeOutputPath(source, extension);
+
+        Assert.Equal(Path.Combine(temp.Path, $"annual report (1){normalizedExtension}"), path);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : IClock
     {
         public DateTimeOffset Now => now;

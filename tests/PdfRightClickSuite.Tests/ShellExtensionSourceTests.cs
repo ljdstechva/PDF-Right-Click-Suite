@@ -73,6 +73,10 @@ public sealed class ShellExtensionSourceTests
         Assert.Contains("L\"Convert to PDF\"", source, StringComparison.Ordinal);
         Assert.Contains("L\"Merge PDFs\"", source, StringComparison.Ordinal);
         Assert.Contains("L\"Split PDF\"", source, StringComparison.Ordinal);
+        Assert.Contains("L\"Convert PDF To\"", source, StringComparison.Ordinal);
+        Assert.Contains("L\"Word (.docx)\"", source, StringComparison.Ordinal);
+        Assert.Contains("L\"Excel (.xlsx)\"", source, StringComparison.Ordinal);
+        Assert.Contains("L\"PowerPoint (.pptx)\"", source, StringComparison.Ordinal);
         Assert.Contains("L\"Make Scanned PDF (B&W)\"", source, StringComparison.Ordinal);
         Assert.Contains("L\"Make Scanned PDF (Colored)\"", source, StringComparison.Ordinal);
         Assert.Contains("L\"Open PDF With\"", source, StringComparison.Ordinal);
@@ -87,9 +91,25 @@ public sealed class ShellExtensionSourceTests
         Assert.Contains("open-with fallback ShellExecute succeeded", source, StringComparison.Ordinal);
         Assert.Contains("CommandScanColored", source, StringComparison.Ordinal);
         Assert.Contains("CommandOpenWith", source, StringComparison.Ordinal);
+        Assert.Contains("CommandConvertTo = 6", source, StringComparison.Ordinal);
+        Assert.Contains("CommandConvertToWord = 7", source, StringComparison.Ordinal);
+        Assert.Contains("CommandConvertToExcel = 8", source, StringComparison.Ordinal);
+        Assert.Contains("CommandConvertToPowerPoint = 9", source, StringComparison.Ordinal);
+        Assert.Contains("CommandCount = 10", source, StringComparison.Ordinal);
         Assert.Contains("scanColored", source, StringComparison.Ordinal);
+        Assert.Contains("convertToWord", source, StringComparison.Ordinal);
+        Assert.Contains("convertToExcel", source, StringComparison.Ordinal);
+        Assert.Contains("convertToPowerPoint", source, StringComparison.Ordinal);
+        Assert.Contains("Convert the selected PDF to an Office document", source, StringComparison.Ordinal);
+        Assert.Contains("Convert the selected PDF to an editable Word document", source, StringComparison.Ordinal);
+        Assert.Contains("Convert the selected PDF to an Excel workbook (best for table-style PDFs)", source, StringComparison.Ordinal);
+        Assert.Contains("Convert the selected PDF to a PowerPoint presentation (one slide per page)", source, StringComparison.Ordinal);
         Assert.Contains("{D8A8E1C0-7B67-4F77-9B57-5B074C3A2C8F}", source, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("{AD6102B8-2161-44C7-B63A-E93821D6FBC0}", source, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{4AA1C5C6-946D-4268-AF0C-8C3C137B0E24}", source, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{8EA50A51-83A3-453F-8007-C946A13B081F}", source, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{388E7AA8-AEDA-42C5-9477-0B50F86D4A6C}", source, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("{EF7E97A8-DC06-4309-BCC9-48CA62875387}", source, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FindRepoRoot()

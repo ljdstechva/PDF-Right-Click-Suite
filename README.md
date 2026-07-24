@@ -50,6 +50,7 @@ The install is per-user and normally does not need administrator rights. On Wind
 
 - Merge two or more PDFs in a user-selected order.
 - Split one PDF into all pages or selected page ranges.
+- Convert one PDF to Word (`.docx`), Excel (`.xlsx`), or PowerPoint (`.pptx`) from a nested **Convert PDF To** menu.
 - Convert supported non-PDF files to PDF without a write confirmation prompt.
 - Create deliberately soft, low-quality scanned-look PDFs from one PDF in B&W or color without a write confirmation prompt.
 - Open one PDF with an installed PDF app detected from Windows' `.pdf` app associations.
@@ -67,6 +68,7 @@ The default installer ships the exact-visibility classic `IContextMenu` shell ex
 
 - **Merge PDFs** appears for 2 or more PDF files.
 - **Split PDF** appears for exactly 1 PDF file.
+- **Convert PDF To** appears for exactly 1 PDF file and contains **Word (.docx)**, **Excel (.xlsx)**, and **PowerPoint (.pptx)**.
 - **Convert to PDF** appears for one or more non-PDF files and never when any selected file is a PDF.
 - **Make Scanned PDF (B&W)** and **Make Scanned PDF (Colored)** appear for exactly 1 PDF file.
 - **Open PDF With** appears for exactly 1 PDF file when Windows reports at least one recommended `.pdf` app association; its submenu lists the detected PDF apps for that machine.
@@ -82,6 +84,16 @@ The default installer ships the exact-visibility classic `IContextMenu` shell ex
 - Office-style files: `doc`, `docx`, `rtf`, `odt`, `xls`, `xlsx`, `ods`, `ppt`, `pptx`, `odp`
 
 Office-style conversion uses LibreOffice headless when available. If LibreOffice is not installed, the CLI falls back to installed Microsoft Office desktop apps for Word, Excel, and PowerPoint formats. Microsoft Office exports use a short local temporary path and an atomic final write so long document/output paths do not exceed Office's export-path limit. HTML uses Microsoft Edge headless print-to-PDF when available and falls back to LibreOffice when Edge is unavailable.
+
+## Convert PDF To Office
+
+Select exactly one PDF, then choose **PDF → Convert PDF To**:
+
+- **Word (.docx)** uses Microsoft Word PDF Reflow when Word is installed, otherwise LibreOffice `writer_pdf_import`. The output is editable, but complex layouts may need cleanup. If neither application is installed, the CLI gives installation guidance.
+- **Excel (.xlsx)** is built in. It extracts positioned text into one worksheet per page and works best for table-style PDFs. It does not recreate formulas, charts, or exact formatting. Image-only/scanned PDFs need OCR first.
+- **PowerPoint (.pptx)** is built in. It creates one full-slide page image per PDF page at up to 150 DPI, preserving visual appearance; the slide text is not editable.
+
+All three conversions run locally, write beside the source with collision suffixes, leave the source unchanged, and remove staged output on cancellation or failure. No file is uploaded.
 
 ## Build
 
@@ -156,6 +168,9 @@ PdfRightClickSuite.Cli.exe --action split --files "input.pdf"
 PdfRightClickSuite.Cli.exe --action convert --files "image.png"
 PdfRightClickSuite.Cli.exe --action scan --files "input.pdf"
 PdfRightClickSuite.Cli.exe --action scan-colored --files "input.pdf"
+PdfRightClickSuite.Cli.exe --action convert-to-word --files "input.pdf"
+PdfRightClickSuite.Cli.exe --action convert-to-excel --files "input.pdf"
+PdfRightClickSuite.Cli.exe --action convert-to-powerpoint --files "input.pdf"
 ```
 
 Useful options:
@@ -227,6 +242,9 @@ Duplicate pages are deduplicated while preserving the first occurrence. For exam
 - Convert multiple merged: `Converted_Merged_YYYYMMDD_HHMMSS.pdf`
 - Scan (B&W): `<original_name>_scanned.pdf`
 - Scan (Colored): `<original_name>_scanned_colored.pdf`
+- PDF to Word: `<original_name>.docx`
+- PDF to Excel: `<original_name>.xlsx`
+- PDF to PowerPoint: `<original_name>.pptx`
 
 Collisions append ` (1)`, ` (2)`, and so on.
 
@@ -238,6 +256,9 @@ Collisions append ` (1)`, ` (2)`, and so on.
 - PDF Gear still appears: check the latest manifest under `%LOCALAPPDATA%\PdfRightClickSuite\registry-backups`. Current-user PDF Gear shell verbs are disabled with `LegacyDisable` and `ProgrammaticAccessOnly`; machine-wide HKLM PDF Gear entries require elevated registry write access.
 - Encrypted/corrupt PDFs: the CLI reports a friendly error and logs technical details.
 - Office conversion says LibreOffice and Microsoft Office are unavailable: install LibreOffice or add `soffice.exe` to `PATH`, or install the matching Microsoft Office desktop app.
+- PDF-to-Word says no backend is available: install Microsoft Word desktop or LibreOffice.
+- PDF-to-Excel says there is no extractable text: run OCR on the scanned/image-only PDF, then retry.
+- PDF-to-PowerPoint produces non-editable text: this is expected because each source page is preserved as a full-slide image.
 - Word reports an unexpected PDF export error: update to the current build, which exports through a short Office-safe temporary path before atomically writing the requested long output path.
 - Unexpected PDF/log pop-up at Windows sign-in: run `scripts\audit-startup-silence.ps1` to record startup entries. Use `-Apply` only after confirming the matched entry is PdfRightClickSuite diagnostic/self-test/log startup noise.
 - Windows asks which app should open a file such as `02` at sign-in: inspect current-user Run entries for an unquoted executable path containing spaces. Back up the exact registry value first, quote the complete executable path, and archive any confirmed stray extensionless log instead of deleting it without inspection.
@@ -251,7 +272,7 @@ Collisions append ` (1)`, ` (2)`, and so on.
 - Original files are not modified.
 - The Explorer extension never performs PDF processing in Explorer. It writes a size-bounded request JSON file, starts the CLI in a new console, and returns.
 - Shell request files are validated, consumed once, and deleted. Stale request files are cleaned so selected document paths do not accumulate in the temporary folder.
-- External processes are limited to known dependencies: Microsoft Edge, LibreOffice, and installed Microsoft Office desktop apps when used as the Office conversion fallback. Edge and LibreOffice run inside a Windows Job Object so cancellation or timeout also stops descendant processes.
+- External processes are limited to known dependencies: Microsoft Edge, LibreOffice, and installed Microsoft Office desktop apps. Built-in PDF-to-Excel and PDF-to-PowerPoint conversion uses packaged local libraries only. Edge and LibreOffice run inside a Windows Job Object so cancellation or timeout also stops descendant processes.
 
 ## Licensing
 
@@ -263,4 +284,4 @@ This repository does not currently declare a license for its original source cod
 dotnet test .\PdfRightClickSuite.sln
 ```
 
-The integration tests generate simple sample PDFs, an image, and a DOCX locally, then verify merge, split, page counts, request JSON, naming, sorting, conversion, cancellation rollback, process-tree termination, and temporary-workspace cleanup. The DOCX backend tests run only when Microsoft Word COM conversion is available and include a long-path case whose former Word export destination exceeds 260 characters.
+The integration tests generate simple sample PDFs, an image, and a DOCX locally, then verify merge, split, page counts, request JSON, naming, sorting, conversion, cancellation rollback, process-tree termination, and temporary-workspace cleanup. PDF-to-Office tests reopen and validate generated XLSX/PPTX packages, check a known two-column grid, cover scanned-PDF behavior, and preserve source hashes. Word-dependent tests run only when Microsoft Word COM conversion is available and include long-path cases.
