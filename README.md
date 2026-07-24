@@ -4,13 +4,17 @@ PdfRightClickSuite is a local Windows PDF utility for File Explorer. It adds a p
 
 ## Quick Install
 
-### Give an AI agent one sentence
+### Install with an AI agent — copy and paste
 
-Copy and send this single sentence to an AI agent that can operate your Windows computer:
+If you use an AI agent that can operate your Windows computer and run PowerShell, send it the single prompt below. You do not need to supply any paths or additional commands.
 
-> Install PDF Right Click Suite on this Windows 10/11 x64 PC from https://github.com/ljdstechva/PDF-Right-Click-Suite by downloading the latest release assets `PdfRightClickSuiteSetup.exe` and `SHA256SUMS.txt`, verifying the installer's SHA-256 against the checksum file, running the per-user installer while preserving its automatic backup of any matching PDF Gear context-menu entries it disables, restarting File Explorer if requested, and then running the installed CLI with `--diagnose --yes` and `--self-test --yes` and reporting both results.
+```text
+Install PDF Right Click Suite on this Windows 10/11 x64 computer from the official GitHub repository https://github.com/ljdstechva/PDF-Right-Click-Suite by downloading the latest release assets PdfRightClickSuiteSetup.exe and SHA256SUMS.txt into a temporary folder, verifying that the installer's SHA-256 exactly matches the published checksum and stopping without running it if the values differ, using Unblock-File only on the verified installer, running the per-user installer without removing unrelated applications while preserving its automatic PDF Gear registry backup, restarting File Explorer only if necessary, running the installed PdfRightClickSuite.Cli.exe with --version, --diagnose --yes, and --self-test --yes, then reporting the installed version, install path, Explorer menu status, and all verification results and deleting only the temporary download files when finished.
+```
 
-The installer is not digitally signed. Only run it when it came from this repository's [latest release](https://github.com/ljdstechva/PDF-Right-Click-Suite/releases/latest) and its SHA-256 matches the published checksum.
+Expected result: the agent installs the current release for your Windows user, confirms the **PDF** Explorer menu is registered, and reports whether diagnostics and self-test passed.
+
+The installer is not digitally signed. The AI agent should run it only when it came from this repository's [latest release](https://github.com/ljdstechva/PDF-Right-Click-Suite/releases/latest) and its SHA-256 matches the published checksum; it should never disable Windows security controls globally.
 
 ### Install it yourself
 
